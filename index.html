@@ -87,7 +87,19 @@
   <div class="captcha-container" id="captchaContainer">
     <div class="g-recaptcha" data-sitekey="6LchKhErAAAAANphVfwAZq4iBEV4_9AN0vbGkC6J" data-callback="onCaptchaSuccess"></div>
   </div>
+  <script>
+  function onCaptchaSuccess(token) {
+    // Megkeressük a CAPTCHA konténert és a tartalom div-et
+    var captchaContainer = document.getElementById("captchaContainer");
+    var pageContent = document.getElementById("pageContent");
 
+    // A CAPTCHA konténer elrejtése (például display none)
+    captchaContainer.style.display = "none";
+
+    // A tartalomról eltávolítjuk a blur hatást a "visible" osztály hozzáadásával
+    pageContent.classList.add("visible");
+  }
+</script>
   <!-- Az oldal tartalma egy külön div-be került, mely eleinte blur-olt -->
   <div id="pageContent" class="content">
     <header id="start">
