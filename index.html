@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>A NAGY SQL JEGYZET - v2025.03.17</title>
+  <!-- Google reCAPTCHA API betöltése -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,853 +47,891 @@
     code {
       font-family: 'Courier New', Courier, monospace;
     }
+    a {
+      color: aqua;
+      transition: ease-in-out 0.3s;
+    }
+    a:hover {
+      color: aquamarine;
+    }
     section {
       margin-bottom: 40px;
+    }
+    /* Tartalom elején blur hatás (mivel a CAPTCHA még nincs megoldva) */
+    .content {
+      filter: blur(8px);
+      transition: filter 0.5s ease;
+    }
+    /* Amikor a CAPTCHA sikeresen megoldódott, eltávolítjuk a blur-t */
+    .content.visible {
+      filter: none;
+    }
+    /* CAPTCHA átfedő konténer, illeszkedik a sötét témához */
+    .captcha-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* Sötét, átlátszó háttér a sötét dizájnhoz */
+      background-color: rgba(40, 42, 54, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
     }
   </style>
 </head>
 <body>
-  <header id="start">
-    <h1>A NAGY SQL JEGYZET - v2025.03.17</h1>
-  </header>
-  
-  <main>
-    <!-- Bevezető -->
-    <section>
-      <p>A JEGYZETBEN AZ ATTRIBÚTUM OSZLOPKÉNT, A REKORD SORKÉNT, AZ EGYED TÁBLAKÉNT VAN HIVATKOZVA!</p>
-      <p>Az SQL kulcsszavai (mint a SELECT, WHERE, stb.) nem érzékenyek a kis- és nagybetűkre!</p>
-      <p>A jegyzet példái a Northwind sample database-hez készültek, MS SQL Server programhoz. Illetve a <a href="https://www.w3schools.com/sql/">W3Schools</a> anyaga alapján került fordításra.</p>
-    </section>
+    <!-- CAPTCHA konténer: Ez jelenik meg, amíg nem oldja meg a felhasználó a reCAPTCHA-t -->
+  <div class="captcha-container" id="captchaContainer">
+    <div class="g-recaptcha" data-sitekey="6LchKhErAAAAANphVfwAZq4iBEV4_9AN0vbGkC6J" data-callback="onCaptchaSuccess"></div>
+  </div>
+
+  <!-- Az oldal tartalma egy külön div-be került, mely eleinte blur-olt -->
+  <div id="pageContent" class="content">
+    <header id="start">
+        <h1>A NAGY SQL JEGYZET - v2025.03.17</h1>
+    </header>
     
-    <!-- Fontos utasítások listája -->
-    <section>
-      <h2>Néhány fontos SQL utasítás:</h2>
-      <ul>
-        <li><strong><a href="#select">SELECT</a></strong> – Adatokat nyer ki az adatbázisból</li>
-        <li><strong><a href="#update">UPDATE</a></strong> – Adatot frissít az adatbázisban</li>
-        <li><strong><a href="#delete">DELETE</a></strong> – Adatot töröl az adatbázisból</li>
-        <li><strong><a href="#insert-i">INSERT INTO</a></strong> – Új adatot illeszt az adatbázisba</li>
-        <li><strong><a href="#create-d">CREATE DATABASE</a></strong> – Új adatbázist hoz létre</li>
-        <li><strong><a href="#alter-d">ALTER DATABASE</a></strong> – Módosít egy adatbázist</li>
-        <li><strong><a href="#create-t">CREATE TABLE</a></strong> – Új táblát hoz létre</li>
-        <li><strong><a href="#alter-t">ALTER TABLE</a></strong> – Módosít egy táblát</li>
-        <li><strong><a href="#drop-t">DROP TABLE</a></strong> – Töröl egy táblát</li>
-        <li><strong><a href="#create-i">CREATE INDEX</a></strong> – Indexet hoz létre (kereső kulcsot)</li>
-        <li><strong><a href="#drop-i">DROP INDEX</a></strong> – Töröl egy indexet</li>
-      </ul>
-    </section>
+    <main>
+        <!-- Bevezető -->
+        <section>
+        <p>A JEGYZETBEN AZ ATTRIBÚTUM OSZLOPKÉNT, A REKORD SORKÉNT, AZ EGYED TÁBLAKÉNT VAN HIVATKOZVA!</p>
+        <p>Az SQL kulcsszavai (mint a SELECT, WHERE, stb.) nem érzékenyek a kis- és nagybetűkre!</p>
+        <p>A jegyzet példái a Northwind sample database-hez készültek, MS SQL Server programhoz. Illetve a <a href="https://www.w3schools.com/sql/">W3Schools</a> anyaga alapján került fordításra.</p>
+        </section>
+        
+        <!-- Fontos utasítások listája -->
+        <section>
+        <h2>Néhány fontos SQL utasítás:</h2>
+        <ul>
+            <li><strong><a href="#select">SELECT</a></strong> – Adatokat nyer ki az adatbázisból</li>
+            <li><strong><a href="#update">UPDATE</a></strong> – Adatot frissít az adatbázisban</li>
+            <li><strong><a href="#delete">DELETE</a></strong> – Adatot töröl az adatbázisból</li>
+            <li><strong><a href="#insert-i">INSERT INTO</a></strong> – Új adatot illeszt az adatbázisba</li>
+            <li><strong><a href="#create-d">CREATE DATABASE</a></strong> – Új adatbázist hoz létre</li>
+            <li><strong><a href="#alter-d">ALTER DATABASE</a></strong> – Módosít egy adatbázist</li>
+            <li><strong><a href="#create-t">CREATE TABLE</a></strong> – Új táblát hoz létre</li>
+            <li><strong><a href="#alter-t">ALTER TABLE</a></strong> – Módosít egy táblát</li>
+            <li><strong><a href="#drop-t">DROP TABLE</a></strong> – Töröl egy táblát</li>
+            <li><strong><a href="#create-i">CREATE INDEX</a></strong> – Indexet hoz létre (kereső kulcsot)</li>
+            <li><strong><a href="#drop-i">DROP INDEX</a></strong> – Töröl egy indexet</li>
+        </ul>
+        </section>
+        
+        <!-- LEKÉRDEZÉS SQL rész -->
+        <section>
+        <h2>LEKÉRDEZÉS SQL</h2>
+        
+        <h3 id="select">-- SELECT --</h3>
+        <p>Adatok kinyerésére használható</p>
+        <p>Adott táblából listázza az adott oszlopokat:</p>
+        <pre><code>SELECT oszlop1, oszlop2, ...
+    FROM tábla_neve;</code></pre>
+        <p>Listázza egy adott tábla összes rekordját:</p>
+        <pre><code>SELECT * FROM tábla_neve;</code></pre>
+        <p>Előfordulhat, hogy egy oszlopban több a megegyező érték.
+    A <strong>DISTINCT</strong> kulcsszó biztosítja, hogy minden érték legfeljebb csak egyszer jelenjen meg:</p>
+        <pre><code>SELECT DISTINCT Country FROM Customers;</code></pre>
+        
+        <h3>-- WHERE --</h3>
+        <p>Rekordok szűrésére használható.</p>
+        <p>Általános forma: (Nem csak SELECT-tel használható!)</p>
+        <pre><code>SELECT oszlop1, oszlop2, ...
+    FROM tábla_neve;
+    WHERE logikai_kifejezés;</code></pre>
+        <p>A logikai kifejezés lehetséges operátorai:</p>
+        <ul>
+            <li>'=' : Egyenlő</li>
+            <li>'>' : Nagyobb</li>
+            <li>'<' : Kisebb</li>
+            <li>'>=' : Nagyobb vagy egyenlő</li>
+            <li>'<=' : Kisebb vagy egyenlő</li>
+            <li>'<>' : Nem egyenlő</li>
+            <li>'BETWEEN' : Két érték közé szűkítés (Az intervallum határai is részei a tartománynak.)</li>
+            <li>'LIKE' : Mintázat keresése</li>
+            <li>'IN' : Több lehetséges érték kijelölése</li>
+        </ul>
+        <p><strong>BETWEEN:</strong></p>
+        <pre><code>SELECT * FROM Products
+    WHERE Price BETWEEN 50 AND 60;</code></pre>
+        <p><strong>LIKE:</strong> ('s' karakterrel kezdődik, utána bármennyi és bármilyen karakter lehet.)<br>
+    Nem érzékeny a kis- és nagybetűkre!</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE City LIKE 's%';</code></pre>
+        <p><strong>IN:</strong> (Listában, zárójelek között kell megadni az elfogadott értékeket.)</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE City IN ('Paris','London');</code></pre>
+        
+        <h3>-- ORDER BY --</h3>
+        <p>Rendezi az eredményt növekvő- vagy csökkenő sorrendben.</p>
+        <p>Alapvetően növekvő sorrendben rendezi az összes rekordot egyetlen oszlop alapján:</p>
+        <pre><code>SELECT * FROM Products
+    ORDER BY Price;</code></pre>
+        <p>Több oszlop szerint is rendezhet:</p>
+        <pre><code>SELECT * FROM Products
+    ORDER BY Price, ProductName;</code></pre>
+        <p>A sor végén megadható, hogy növekvő (ASC) vagy csökkenő (DESC) sorrendben történjen a rendezés.
+    Példa, ahol először ár, majd a termék neve csökkenő sorrendben:</p>
+        <pre><code>SELECT * FROM Products
+    ORDER BY Price, ProductName DESC;</code></pre>
+        <p>Fontos a rendezés sorrendje, mert a deklarációban előrébb szereplő oszlopok elsőbbséget élveznek.</p>
+        <p>Példa, különböző oszlopok különböző sorrendben:</p>
+        <pre><code>SELECT * FROM Customers
+    ORDER BY Country ASC, CustomerName DESC;</code></pre>
+        
+        <h3>-- AND és OR --</h3>
+        <p>A WHERE utasításban több feltétel összekapcsolására használhatóak.</p>
+        <p>Általános forma:</p>
+        <pre><code>SELECT oszlop1, oszlop2, ...
+    FROM tábla_neve
+    WHERE logikai_kifejezés1 AND/OR logikai_kifejezés2 AND/OR logikai_kifejezés3, ...;</code></pre>
+        <p>Példa, ahol az ország és a név is szűrve van:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE Country = 'Spain' AND (CustomerName LIKE 'G%' OR CustomerName LIKE 'R%');</code></pre>
+        <p>A zárójelek használata kritikus, mert nélkülük más eredményt kapnánk.</p>
+        
+        <h3>-- NOT --</h3>
+        <p>A logikai feltétel tagadása, mindig a feltétel elé írva.</p>
+        <p>Példa, azok a rekordok, ahol az ország nem Spain:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE NOT Country = 'Spain';</code></pre>
+        <p>Példa, ahol a név nem 'A'-val kezdődik:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName NOT LIKE 'A%';</code></pre>
+        <p>Hasonlóan működik a BETWEEN és az IN esetén is.</p>
+        
+        <h3 id="insert-i">-- INSERT INTO --</h3>
+        <p>Új rekordok beszúrására szolgáló utasítás.</p>
+        <p>Kétféle módon:</p>
+        <p>1. Oszlopnevek megadásával:</p>
+        <pre><code>INSERT INTO tábla_neve (oszlop1, oszlop2, oszlop3, ...)
+    VALUES (érték1, érték2, érték3, ...);</code></pre>
+        <p>2. Ha minden oszlophoz értéket adunk:</p>
+        <pre><code>INSERT INTO tábla_neve
+    VALUES (érték1, érték2, érték3, ...);</code></pre>
+        <p>Több rekord egyszerre:</p>
+        <pre><code>INSERT INTO Customers (CustomerName, ContactName, Address, City, PostalCode, Country)
+    VALUES
+    ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway'),
+    ('Greasy Burger', 'Per Olsen', 'Gateveien 15', 'Sandnes', '4306', 'Norway'),
+    ('Tasty Tee', 'Finn Egan', 'Streetroad 19B', 'Liverpool', 'L1 0AA', 'UK');</code></pre>
+        
+        <h3>-- NULL --</h3>
+        <p>Egy rekord adott oszlopának értékét ellenőrzi, hogy NULL-e.</p>
+        <p>Példa, ahol a cím ismeretlen:</p>
+        <pre><code>SELECT CustomerName, ContactName, Address
+    FROM Customers
+    WHERE Address IS NULL;</code></pre>
+        
+        <h3 id="update">-- UPDATE --</h3>
+        <p>Létező rekordok módosítására szolgál.</p>
+        <p>Általános forma:</p>
+        <pre><code>UPDATE tábla_neve
+    SET oszlop1 = érték1, oszlop2 = érték2, ...
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Figyelem: WHERE nélkül minden rekord módosul!</p>
+        <p>Példa, konkrét rekord módosítása az ID alapján:</p>
+        <pre><code>UPDATE Customers
+    SET ContactName = 'Alfred Schmidt', City = 'Frankfurt'
+    WHERE CustomerID = 1;</code></pre>
+        <p>Példa, minden mexikói rekord esetén a kapcsolattartó módosítása:</p>
+        <pre><code>UPDATE Customers
+    SET ContactName='Juan'
+    WHERE Country='Mexico';</code></pre>
+        
+        <h3 id="delete">-- DELETE --</h3>
+        <p>Létező rekordok törlésére szolgál.</p>
+        <p>Általános forma:</p>
+        <pre><code>DELETE FROM tábla_neve WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, az összes rekord törlése (a tábla magát nem törli):</p>
+        <pre><code>DELETE FROM tábla_neve;</code></pre>
+        <p>Példa, a tábla teljes törlése:</p>
+        <pre><code>DROP TABLE tábla_neve;</code></pre>
+        
+        <h3>-- SELECT TOP --</h3>
+        <p>Megadható, hány rekordot kérünk le a lekérdezésből.</p>
+        <pre><code>SELECT TOP darabszám/százalék oszlop(ok)
+    FROM tábla_neve
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, első 3 rekord Németország esetén:</p>
+        <pre><code>SELECT TOP 3 * FROM Customers
+    WHERE Country='Germany';</code></pre>
+        <p>Példa, első 50%-os rekordok:</p>
+        <pre><code>SELECT TOP 50 PERCENT * FROM Customers
+    WHERE Country='Germany';</code></pre>
+        <p>Ha visszafelé szeretnénk rendezni:</p>
+        <pre><code>SELECT TOP 3 * FROM Customers
+    WHERE Country = 'Germany'
+    ORDER BY CustomerName DESC;</code></pre>
+        
+        <h3>-- Aggregáló (Összesítő) függvények --</h3>
+        <p>Összesítő műveleteket végeznek egy értékkészleten, egyetlen értéket adva vissza.</p>
+        <ul>
+            <li><strong>MIN()</strong> : Legkisebb érték</li>
+            <li><strong>MAX()</strong> : Legnagyobb érték</li>
+            <li><strong>COUNT()</strong> : Rekordok száma</li>
+            <li><strong>SUM()</strong> : Numerikus oszlop összege</li>
+            <li><strong>AVG()</strong> : Numerikus oszlop átlaga</li>
+        </ul>
+        <p>A COUNT kivételével a NULL értékeket figyelmen kívül hagyja.</p>
+        <p><strong>MIN és MAX:</strong></p>
+        <p>Példa, MIN használata:</p>
+        <pre><code>SELECT MIN(oszlop)
+    FROM tábla_neve
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, MAX használata:</p>
+        <pre><code>SELECT MAX(oszlop)
+    FROM tábla_neve
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Az <strong>AS</strong> kulcsszó segítségével alternatív nevet adhatunk az eredményoszlopnak:</p>
+        <pre><code>SELECT MIN(Price) AS SmallestPrice
+    FROM Products;</code></pre>
+        <p>Csoportosított lekérdezés:</p>
+        <pre><code>SELECT MIN(Price) AS SmallestPrice, CategoryID
+    FROM Products
+    GROUP BY CategoryID;</code></pre>
+        
+        <p><strong>-- COUNT --</strong></p>
+        <p>Példa, feltételeknek megfelelő rekordok száma:</p>
+        <pre><code>SELECT COUNT(oszlop)
+    FROM tábla_neve
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Az összes rekord száma (itt a NULL értékek is számítanak):</p>
+        <pre><code>SELECT COUNT(*)
+    FROM Products;</code></pre>
+        <p>Példa, hány féle ár van (DISTINCT használatával):</p>
+        <pre><code>SELECT COUNT(DISTINCT Price)
+    FROM Products;</code></pre>
+        <p>Többszavas alternatív név szögletes zárójelekkel:</p>
+        <pre><code>SELECT COUNT(*) AS [Number of records]
+    FROM Products;</code></pre>
+        <p>GROUP BY használatával:</p>
+        <pre><code>SELECT COUNT(*) AS [Number of records], CategoryID
+    FROM Products
+    GROUP BY CategoryID;</code></pre>
+        
+        <p><strong>-- SUM --</strong></p>
+        <p>Példa, egy numerikus oszlop összege:</p>
+        <pre><code>SELECT SUM(oszlop)
+    FROM tábla_neve
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, matematikai kifejezés használata (pl. minden termék ára 10 Ft esetén):</p>
+        <pre><code>SELECT SUM(Quantity * 10)
+    FROM OrderDetails;</code></pre>
+        
+        <p><strong>-- AVG --</strong></p>
+        <p>Példa, oszlop átlaga:</p>
+        <pre><code>SELECT AVG(oszlop)
+    FROM tábla_neve
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, átlagnál magasabb árú termékek:</p>
+        <pre><code>SELECT * FROM Products
+    WHERE price > (SELECT AVG(price) FROM Products);</code></pre>
+        <p>GROUP BY esetén:</p>
+        <pre><code>SELECT AVG(Price) AS AveragePrice, CategoryID
+    FROM Products
+    GROUP BY CategoryID;</code></pre>
+        
+        <h3>-- LIKE --</h3>
+        <p>Mintázat keresésére használható.</p>
+        <pre><code>SELECT oszlop1, oszlop2, ...
+    FROM tábla_neve
+    WHERE oszlop LIKE minta;</code></pre>
+        <p>Két gyakran használt helyettesítő jel:</p>
+        <ul>
+            <li><strong>%</strong> : Megenged nulla, egy vagy akár több karaktert.</li>
+            <li><strong>_</strong> : Csak egy karaktert enged meg!</li>
+        </ul>
+        <p>Példa, ahol az 'L', 'n' és 'd' karakterek kötöttek:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE city LIKE 'L_nd__';</code></pre>
+        <p>Példa, ahol a név 'A'-val kezdődik:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE 'A%';</code></pre>
+        <p>Példa, ahol a név 'A'-val végződik:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE '%A';</code></pre>
+        <p>Példa, ahol a név 'A'-val kezdődik és 'B'-vel végződik:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE 'A%B';</code></pre>
+        <p>Példa, ahol a név tartalmaz 'A'-t:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE '%A%';</code></pre>
+        <p>Példa, ahol kombinálva vannak a helyettesítő jelek (legalább 3 karakter hosszú):</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE 'a__%';</code></pre>
+        
+        <h3>-- Helyettesítő jelek --</h3>
+        <p>A helyettesítő jelek segítségével egyszerűbbé válik a mintázatok keresése a LIKE operátorral.</p>
+        <ul>
+            <li><strong>%</strong> : Megenged nulla vagy több karaktert.</li>
+            <li><strong>_</strong> : Csak egy karakter.</li>
+            <li><strong>[]</strong> : Egyetlen karakter, ami a zárójelek között szerepel.</li>
+            <li><strong>^</strong> : Olyan karakter, ami NEM szerepel a zárójelek között.</li>
+            <li><strong>-</strong> : Egy megadott tartományból választ egy karaktert.</li>
+        </ul>
+        <p>Példa, biztosan 'b', 's' vagy 'p' az első karakter:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE '[bsp]%';</code></pre>
+        <p>Példa, ahol az első karakter 'a' és 'f' között van:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerName LIKE '[a-f]%';</code></pre>
+        
+        <h3>-- IN --</h3>
+        <p>Lehetővé teszi több értékre történő szűrést.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla_neve
+    WHERE oszlop IN (érték1, érték2, ...);</code></pre>
+        <p>Allekérdezéssel:</p>
+        <pre><code>SELECT * FROM Customers
+    WHERE CustomerID IN (SELECT CustomerID FROM Orders);</code></pre>
+        
+        <h3>-- BETWEEN --</h3>
+        <p>Két érték közötti szűkítés (az intervallum határai részei a tartománynak), NOT kulcsszóval ellentétesen is.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla_neve
+    WHERE oszlop BETWEEN érték1 AND érték2;</code></pre>
+        <p>Példa, árak 10 és 20 Ft között, és kategóriák 1, 2 vagy 3:</p>
+        <pre><code>SELECT * FROM Products
+    WHERE Price BETWEEN 10 AND 20
+    AND CategoryID IN (1,2,3);</code></pre>
+        <p>Példa, szöveg esetén (ABC sorrend szerint):</p>
+        <pre><code>SELECT * FROM Products
+    WHERE ProductName NOT BETWEEN 'Carnarvon Tigers' AND 'Mozzarella di Giovanni'
+    ORDER BY ProductName;</code></pre>
+        <p>Dátumokra kétféle írásmód:</p>
+        <pre><code>SELECT * FROM Orders
+    WHERE OrderDate BETWEEN #07/01/1996# AND #07/31/1996#;
+
+    SELECT * FROM Orders
+    WHERE OrderDate BETWEEN '1996-07-01' AND '1996-07-31';</code></pre>
+        
+        <h3>-- ALIAS --</h3>
+        <p>Táblák vagy oszlopok ideiglenes elnevezése.</p>
+        <pre><code>SELECT oszlop AS alias_név
+    FROM tábla_neve;
+
+    SELECT oszlop(ok)
+    FROM tábla_neve AS alias_név;</code></pre>
+        <p>Példák:</p>
+        <pre><code>SELECT CustomerID AS ID
+    FROM Customers;
+
+    SELECT CustomerID ID
+    FROM Customers;
+
+    SELECT CustomerID AS ID, CustomerName AS Customer
+    FROM Customers;
+
+    SELECT ProductName AS "My Great Products"
+    FROM Products;
+
+    SELECT ProductName AS [My Great Products]
+    FROM Products;
+
+    SELECT CustomerName, Address + ', ' + PostalCode + ' ' + City + ', ' + Country AS Address
+    FROM Customers;
+
+    SELECT * FROM Customers AS Persons;</code></pre>
+        <p>Egy példa táblák alias használatára:</p>
+        <pre><code>SELECT o.OrderID, o.OrderDate, c.CustomerName
+    FROM Customers AS c, Orders AS o
+    WHERE c.CustomerName='KFC' AND c.CustomerID=o.CustomerID;</code></pre>
+        
+        <h3>-- JOIN --</h3>
+        <p>Két vagy több tábla rekordjainak összekapcsolása közös oszlop alapján.</p>
+        <ul>
+            <li>(INNER) JOIN: Csak azokat a rekordokat adja vissza, ahol mindkét táblában egyezés van.</li>
+            <li>LEFT (OUTER) JOIN: A bal oldali tábla összes rekordját és a jobb oldali egyező rekordokat adja vissza.</li>
+            <li>RIGHT (OUTER) JOIN: A jobb oldali tábla összes rekordját és a bal oldali egyező rekordokat adja vissza.</li>
+            <li>FULL (OUTER) JOIN: Mindkét tábla összes rekordját adja vissza, ahol van egyezés vagy nincs.</li>
+        </ul>
+        <p><strong>-- INNER JOIN --</strong></p>
+        <p>Általános használat:</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla1
+    INNER JOIN tábla2
+    ON tábla1.oszlop = tábla2.oszlop;</code></pre>
+        <p>Példa, ha egy terméknek nincs CategoryID-je vagy nincs megfelelő rekord a Categories táblában, azt nem adja vissza:</p>
+        <pre><code>SELECT ProductID, ProductName, CategoryName
+    FROM Products
+    INNER JOIN Categories ON Products.CategoryID = Categories.CategoryID;</code></pre>
+        <p>Javasolt az oszlopok előtaggal történő megadása ütközések elkerülése érdekében:</p>
+        <pre><code>SELECT Products.ProductID, Products.ProductName, Categories.CategoryName
+    FROM Products
+    INNER JOIN Categories ON Products.CategoryID = Categories.CategoryID;</code></pre>
+        <p>Három tábla összekapcsolása:</p>
+        <pre><code>SELECT Orders.OrderID, Customers.CustomerName, Shippers.ShipperName
+    FROM ((Orders
+    INNER JOIN Customers ON Orders.CustomerID = Customers.CustomerID)
+    INNER JOIN Shippers ON Orders.ShipperID = Shippers.ShipperID);</code></pre>
+        
+        <p><strong>-- LEFT JOIN --</strong></p>
+        <p>Visszaadja a bal oldali tábla összes rekordját, valamint a jobb oldali egyező rekordokat.</p>
+        <pre><code>SELECT column_name(s)
+    FROM tábla1
+    LEFT JOIN tábla2
+    ON tábla1.oszlop = tábla2.oszlop;</code></pre>
+        <p>Példa, vásárlók rendelései:</p>
+        <pre><code>SELECT Customers.CustomerName, Orders.OrderID
+    FROM Customers
+    LEFT JOIN Orders ON Customers.CustomerID = Orders.CustomerID
+    ORDER BY Customers.CustomerName;</code></pre>
+        
+        <p><strong>-- RIGHT JOIN --</strong></p>
+        <p>Visszaadja a jobb oldali tábla összes rekordját, valamint a bal oldali egyező rekordokat.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla1
+    LEFT JOIN tábla2
+    ON tábla1.oszlop = tábla2.oszlop;</code></pre>
+        <p>Példa, rendeléseket készítő alkalmazottak:</p>
+        <pre><code>SELECT Orders.OrderID, Employees.FirstName + ' ' + Employees.LastName AS Employee
+    FROM Orders
+    RIGHT JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID
+    ORDER BY Orders.OrderID;</code></pre>
+        
+        <p><strong>-- FULL JOIN --</strong></p>
+        <p>Mindkét tábla rekordjait visszaadja, ahol hiányzó értékeket NULL-pel pótol.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla1
+    FULL JOIN tábla2
+    ON tábla1.oszlop = tábla2.oszlop;
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, minden vásárló és rendelés listázása:</p>
+        <pre><code>SELECT Customers.CustomerName, Orders.OrderID
+    FROM Customers
+    FULL OUTER JOIN Orders ON Customers.CustomerID = Orders.CustomerID
+    ORDER BY Customers.CustomerName;</code></pre>
+        
+        <p><strong>-- SELF JOIN --</strong></p>
+        <p>A tábla önmagával történő összekapcsolása.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla1 T1, tábla2 T2
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, azonos városban lévő vásárlók összekapcsolása:</p>
+        <pre><code>SELECT A.CustomerName AS CustomerName1, B.CustomerName AS CustomerName2, A.City
+    FROM Customers A, Customers B
+    WHERE A.CustomerID <> B.CustomerID
+    AND A.City = B.City
+    ORDER BY A.City;</code></pre>
+        
+        <p><strong>-- UNION --</strong></p>
+        <p>Két vagy több SELECT utasítás eredménykészletét kombinálja.</p>
+        <ul>
+            <li>Minden SELECT-nek ugyanannyi oszlopa kell legyen.</li>
+            <li>Az oszlopok típusának hasonlónak kell lenniük.</li>
+            <li>A sorrendnek meg kell egyeznie.</li>
+        </ul>
+        <p>Általános használat:</p>
+        <pre><code>SELECT oszlop(ok) FROM tábla1
+    UNION
+    SELECT oszlop(ok) FROM tábla2;</code></pre>
+        <p>Duplikáció engedélyezéséhez az <strong>ALL</strong> kulcsszóval:</p>
+        <pre><code>SELECT oszlop(ok) FROM tábla1
+    UNION ALL
+    SELECT oszlop(ok) FROM tábla2;</code></pre>
+        <p>Példa, német városok vásárlók és beszállítók esetén:</p>
+        <pre><code>SELECT City, Country FROM Customers
+    WHERE Country='Germany'
+    UNION
+    SELECT City, Country FROM Suppliers
+    WHERE Country='Germany'
+    ORDER BY City;</code></pre>
+        <p>Példa, típus, kapcsolattartó, város, ország:</p>
+        <pre><code>SELECT 'Customer' AS Type, ContactName, City, Country
+    FROM Customers
+    UNION
+    SELECT 'Supplier', ContactName, City, Country
+    FROM Suppliers;</code></pre>
+        
+        <h3>-- GROUP BY --</h3>
+        <p>Csoportosítja az azonos értékű sorokat, például országonkénti ügyfélszám meghatározása.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla_neve
+    WHERE logikai_kifejezés
+    GROUP BY oszlop(ok)
+    ORDER BY oszlop(ok);</code></pre>
+        <p>Példa, vásárlók száma országonként:</p>
+        <pre><code>SELECT COUNT(CustomerID), Country
+    FROM Customers
+    GROUP BY Country;</code></pre>
+        <p>Példa, vásárlók száma csökkenő sorrendben:</p>
+        <pre><code>SELECT COUNT(CustomerID), Country
+    FROM Customers
+    GROUP BY Country
+    ORDER BY COUNT(CustomerID) DESC;</code></pre>
+        <p>Példa, melyik futár hány rendelést szállít:</p>
+        <pre><code>SELECT Shippers.ShipperName, COUNT(Orders.OrderID) AS NumberOfOrders 
+    FROM Orders
+    LEFT JOIN Shippers ON Orders.ShipperID = Shippers.ShipperID
+    GROUP BY ShipperName;</code></pre>
+        
+        <h3>-- HAVING --</h3>
+        <p>Az összesítő függvények szűrésére szolgál, hasonlóan a WHERE-hez.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla_neve
+    WHERE logikai_kifejezés
+    GROUP BY oszlop(ok)
+    HAVING logikai_kifejezés
+    ORDER BY oszlop(ok);</code></pre>
+        <p>Példa, azok az alkalmazottak, akiknek a vezetékneve "Davolio" vagy "Fuller" és több mint 25 rendelést teljesítettek:</p>
+        <pre><code>SELECT Employees.LastName, COUNT(Orders.OrderID) AS NumberOfOrders
+    FROM Orders
+    INNER JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID
+    WHERE LastName = 'Davolio' OR LastName = 'Fuller'
+    GROUP BY LastName
+    HAVING COUNT(Orders.OrderID) > 25;</code></pre>
+        
+        <h3>-- EXISTS --</h3>
+        <p>Az allekérdezésben lévő rekord(ok) létezését vizsgálja. TRUE értéket ad, ha legalább egy rekord található.</p>
+        <p>Példa, beszállítók, ahol az ár 20 Ft alatt van:</p>
+        <pre><code>SELECT SupplierName
+    FROM Suppliers
+    WHERE EXISTS (SELECT ProductName
+                FROM Products
+                WHERE Products.SupplierID = Suppliers.supplierID AND Price < 20);</code></pre>
+        
+        <h3>-- ANY és ALL --</h3>
+        <p>Az összehasonlításhoz egy oszlopérték és egy értékkészlet között.</p>
+        <p><strong>ANY:</strong> TRUE, ha az allekérdezés bármely értéke megfelel a feltételnek.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla_neve
+    WHERE oszlop (összehasonlító operátor) ANY (SELECT oszlop
+                                                FROM tábla_neve
+                                                WHERE logikai_kifejezés);</code></pre>
+        <p><strong>ALL:</strong> TRUE, ha az allekérdezés minden értéke megfelel a feltételnek.</p>
+        <pre><code>SELECT oszlop(ok)
+    FROM tábla_neve
+    WHERE oszlop (összehasonlító operátor) ALL (SELECT oszlop
+                                                FROM tábla_neve
+                                                WHERE logikai_kifejezés);</code></pre>
+        <p>Példa, azon termékek nevei, melyekből még pontosan 10 db van:</p>
+        <pre><code>SELECT ProductName
+    FROM Products
+    WHERE ProductID = ANY (SELECT ProductID
+                        FROM OrderDetails
+                        WHERE Quantity = 10);</code></pre>
+        <p>Példa, minden termék neve:</p>
+        <pre><code>SELECT ALL ProductName
+    FROM Products
+    WHERE TRUE;</code></pre>
+        <p>Példa, ha az OrderDetails táblában minden termékből pontosan 10 van:</p>
+        <pre><code>SELECT ProductName
+    FROM Products
+    WHERE ProductID = ALL (SELECT ProductID
+                        FROM OrderDetails
+                        WHERE Quantity = 10);</code></pre>
+        
+        <h3>-- SELECT INTO --</h3>
+        <p>Adatok másolása egy táblából egy új táblába.</p>
+        <pre><code>SELECT oszlop1, oszlop2, oszlop3, ...
+    INTO újtábla [IN külső_adatbázis]
+    FROM régitábla
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa, teljes tábla másolása:</p>
+        <pre><code>SELECT *
+    INTO újtábla [IN külső_adatbázis]
+    FROM régitábla
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Backup tábla készítése:</p>
+        <pre><code>SELECT * INTO CustomersBackup2025
+    FROM Customers;</code></pre>
+        <p>Másik adatbázisba:</p>
+        <pre><code>SELECT * INTO CustomersBackup2025 IN 'Backup.mdb'
+    FROM Customers;</code></pre>
+        <p>Példa, másik tábla létrehozása:</p>
+        <pre><code>SELECT * INTO CustomersGermany
+    FROM Customers
+    WHERE Country = 'Germany';</code></pre>
+        <p>Példa, több táblából egy táblába:</p>
+        <pre><code>SELECT Customers.CustomerName, Orders.OrderID
+    INTO CustomersOrderBackup2025
+    FROM Customers
+    LEFT JOIN Orders ON Customers.CustomerID = Orders.CustomerID;</code></pre>
+        <p>Példa, új, üres tábla létrehozása egy meglévő séma alapján:</p>
+        <pre><code>SELECT * INTO newtable
+    FROM oldtable
+    WHERE 1 = 0;</code></pre>
+        
+        <h3>-- INSERT INTO (adatmásolás) --</h3>
+        <p>Adatok másolása egy táblából egy másikba. A forrás- és céltábla adattípusainak egyeznie kell.</p>
+        <pre><code>INSERT INTO céltábla
+    SELECT * FROM forrástábla
+    WHERE logikai_kifejezés;
+
+    INSERT INTO céltábla (oszlop1, oszlop2, oszlop3, ...)
+    SELECT oszlop1, oszlop2, oszlop3, ...
+    FROM forrástábla
+    WHERE logikai_kifejezés;</code></pre>
+        <p>Példa:</p>
+        <pre><code>INSERT INTO Customers (CustomerName, City, Country)
+    SELECT SupplierName, City, Country
+    FROM Suppliers;</code></pre>
+        
+        <h3>-- CASE --</h3>
+        <p>Feltételes visszatérési érték, hasonló az if szerkezethez. Ha nincs ELSE, és egyik feltétel sem igaz, akkor NULL.</p>
+        <pre><code>CASE
+        WHEN logikai_kifejezés1 THEN eredmény1
+        WHEN logikai_kifejezés2 THEN eredmény2
+        WHEN logikai_kifejezésN THEN eredményN
+        ELSE result
+    END;</code></pre>
+        <p>Példa:</p>
+        <pre><code>SELECT OrderID, Quantity,
+    CASE
+        WHEN Quantity > 30 THEN 'The quantity is greater than 30'
+        WHEN Quantity = 30 THEN 'The quantity is 30'
+        ELSE 'The quantity is under 30'
+    END AS QuantityText
+    FROM OrderDetails;</code></pre>
+        <p>Példa 2:</p>
+        <pre><code>SELECT CustomerName, City, Country
+    FROM Customers
+    ORDER BY (CASE
+                WHEN City IS NULL THEN Country
+                ELSE City
+            END);</code></pre>
+        
+        <h3>-- NULL függvények --</h3>
+        <p>Hasznosak, ha egy NULL értékkel kell műveletet végezni, de nem akarunk NULL eredményt.</p>
+        <p><strong>ISNULL()</strong>: Alternatív értéket ad vissza, ha a kifejezés NULL.</p>
+        <p>Példa (az UnitsOnOrder tartalmazhat NULL értéket):</p>
+        <pre><code>SELECT ProductName, UnitPrice * (UnitsInStock + ISNULL(UnitsOnOrder, 0))
+    FROM Products;</code></pre>
+        <p><strong>COALESCE()</strong>: Hasonlóan működik:</p>
+        <pre><code>SELECT ProductName, UnitPrice * (UnitsInStock + COALESCE(UnitsOnOrder, 0))
+    FROM Products;</code></pre>
+        
+        <h3>-- Tárolt eljárás --</h3>
+        <p>Elmenthető SQL-kód, amelyet újra felhasználhatunk, akár paraméterekkel.</p>
+        <pre><code>CREATE PROCEDURE procedúra_neve
+    AS
+    sql_utasítás
+    GO;</code></pre>
+        <p>Futtatás:</p>
+        <pre><code>EXEC procedúra_neve;</code></pre>
+        <p>Példa, minden vásárlót kiválasztó eljárás:</p>
+        <pre><code>CREATE PROCEDURE SelectAllCustomers
+    AS
+    SELECT * FROM Customers
+    GO;
+
+    EXEC SelectAllCustomers;</code></pre>
+        <p>Példa, eljárás egy adott város ügyfeleinek kiválasztására:</p>
+        <pre><code>CREATE PROCEDURE SelectAllCustomers @City nvarchar(30)
+    AS
+    SELECT * FROM Customers WHERE City = @City
+    GO;
+
+    EXEC SelectAllCustomers @City = 'London';</code></pre>
+        <p>Példa, több paraméteres tárolt eljárás:</p>
+        <pre><code>CREATE PROCEDURE SelectAllCustomers @City nvarchar(30), @PostalCode nvarchar(10)
+    AS
+    SELECT * FROM Customers WHERE City = @City AND PostalCode = @PostalCode
+    GO;
+
+    EXEC SelectAllCustomers @City = 'London', @PostalCode = 'WA1 1DP';</code></pre>
+        
+        <h3>-- Megjegyzések --</h3>
+        <p>Megjegyzések segítik a kód olvashatóságát.</p>
+        <p>Egysoros megjegyzés:</p>
+        <pre><code>-- Ez egy egysoros megjegyzés</code></pre>
+        <p>Többsoros megjegyzés:</p>
+        <pre><code>/* Ez pedig
+    több soros
+    megjegyzés */</code></pre>
+        
+        <h3>-- Operátorok --</h3>
+        <p><strong>Aritmetikai operátorok:</strong></p>
+        <ul>
+            <li>'+' : Összeadás</li>
+            <li>'-' : Kivonás</li>
+            <li>'*' : Szorzás</li>
+            <li>'/' : Osztás</li>
+            <li>'%' : Maradékos osztás</li>
+        </ul>
+        <p><strong>Bitwise operátorok:</strong></p>
+        <ul>
+            <li>'&amp;' : Bitwise AND</li>
+            <li>'|': Bitwise OR</li>
+            <li>'^' : Bitwise exclusive OR</li>
+        </ul>
+        <p><strong>Összehasonlító operátorok:</strong></p>
+        <ul>
+            <li>'=' : Egyenlő</li>
+            <li>'>' : Nagyobb</li>
+            <li>'<' : Kisebb</li>
+            <li>'&gt;=' : Nagyobb egyenlő</li>
+            <li>'&lt;=' : Kisebb egyenlő</li>
+            <li>'&lt;&gt;' : Nem egyenlő</li>
+        </ul>
+        <p><strong>Összetett operátorok:</strong> (MS SQL SERVER környezetben nem használhatók)</p>
+        <ul>
+            <li>'+=' : Plusz egyenlő</li>
+            <li>'-=' : Mínusz egyenlő</li>
+            <li>'*=' : Szor egyenlő</li>
+            <li>'/=' : Osztva egyenlő</li>
+            <li>'%=' : Maradék egyenlő</li>
+            <li>'&amp;=' : Bitwise AND egyenlő</li>
+            <li>'^-=' : Bitwise exclusive egyenlő</li>
+            <li>'|*=' : Bitwise OR egyenlő</li>
+        </ul>
+        </section>
+        
+        <!-- ADATBÁZIS SQL rész -->
+        <section>
+        <h2>ADATBÁZIS SQL</h2>
+        
+        <h3 id="create-d">-- CREATE DATABASE --</h3>
+        <p>Új adatbázis létrehozása.</p>
+        <p>Általános használat:</p>
+        <pre><code>CREATE DATABASE adatbázis_neve;</code></pre>
+        <p>Ellenőrzés (összes adatbázis listázása): SHOW DATABASES</p>
+        
+        <h3 id="drop-d">-- DROP DATABASE --</h3>
+        <p>Meglévő adatbázis törlése.</p>
+        <pre><code>DROP DATABASE adatbázis_neve;</code></pre>
+        <p>Ellenőrzés (összes adatbázis listázása): SHOW DATABASES</p>
+        
+        <h3>-- BACKUP DATABASE --</h3>
+        <p>Teljes backup készítése egy adatbázisról.</p>
+        <pre><code>BACKUP DATABASE adatbázis_neve
+    TO DISK = 'fájl_útvonala';</code></pre>
+        <p>A differenciális backup csak a változott részeket készíti:</p>
+        <pre><code>BACKUP DATABASE adatbázis_neve
+    TO DISK = 'fájl_útvonala'
+    WITH DIFFERENTIAL;</code></pre>
+        
+        <h3 id="create-t">-- CREATE TABLE --</h3>
+        <p>Új tábla létrehozása.</p>
+        <pre><code>CREATE TABLE tábla_neve (
+        oszlop1 adattípus,
+        oszlop2 adattípus,
+        oszlop3 adattípus,
+        ...
+    );</code></pre>
+        <p>Másik tábla alapján:</p>
+        <pre><code>CREATE TABLE új_tábla AS
+    SELECT oszlop1, oszlop2, ...
+    FROM létező_tábla
+    WHERE ...;</code></pre>
+        
+        <h3 id="drop-t">-- DROP TABLE --</h3>
+        <p>Tábla törlése az adatbázisból.</p>
+        <pre><code>DROP TABLE tábla_neve;</code></pre>
+        <p>Vagy az összes adat törlése a séma megtartásával:</p>
+        <pre><code>TRUNCATE TABLE tábla_neve;</code></pre>
+        
+        <h3 id="alter-t">-- ALTER TABLE --</h3>
+        <p>Tábla oszlopainak módosítása, megszorítások kezelése.</p>
+        <p>Oszlop hozzáadása:</p>
+        <pre><code>ALTER TABLE tábla_neve
+    ADD oszlop adattípus;</code></pre>
+        <p>Oszlop törlése:</p>
+        <pre><code>ALTER TABLE tábla_neve
+    DROP COLUMN oszlop;</code></pre>
+        <p>Oszlop átnevezése:</p>
+        <pre><code>ALTER TABLE tábla_neve
+    RENAME COLUMN réginév TO újnév;</code></pre>
+        <p>SQL Server-ben:</p>
+        <pre><code>EXEC sp_rename 'tábla.réginév', 'újnév', 'COLUMN';</code></pre>
+        <p>Adattípus módosítása:</p>
+        <pre><code>ALTER TABLE tábla_neve
+    ALTER COLUMN oszlop adattípus;</code></pre>
+        
+        <h3>-- Megszorítások --</h3>
+        <p>Új táblán:</p>
+        <pre><code>CREATE TABLE tábla_neve (
+        oszlop1 adattípus megszorítás,
+        oszlop2 adattípus megszorítás,
+        oszlop3 adattípus megszorítás,
+        ...
+    );</code></pre>
+        <p>Meglévő táblán:</p>
+        <pre><code>ALTER TABLE tábla_neve (
+        oszlop1 adattípus megszorítás,
+        oszlop2 adattípus megszorítás,
+        oszlop3 adattípus megszorítás,
+        ...
+    );</code></pre>
+        <p>Leggyakoribb megszorítások:</p>
+        <ul>
+            <li><strong>NOT NULL</strong> : Biztosítja, hogy az oszlop ne legyen NULL.</li>
+            <li><strong>UNIQUE</strong> : Az oszlop értékei egyediek legyenek.</li>
+            <li><strong>PRIMARY KEY</strong> : Az oszlop (vagy oszlopok) egyedisége + NOT NULL.</li>
+            <li><strong>FOREIGN KEY</strong> : Megakadályozza a kapcsolatok megsértését.</li>
+            <li><strong>CHECK</strong> : Biztosítja, hogy az érték megfeleljen egy feltételnek.</li>
+            <li><strong>DEFAULT</strong> : Alapértelmezett érték, ha nincs megadva.</li>
+            <li><strong>CREATE INDEX</strong> : Gyorsabb lekérdezéshez.</li>
+        </ul>
+        
+        <h3>-- NOT NULL --</h3>
+        <p>A megszorítás kikényszeríti, hogy az oszlop mindig tartalmazzon értéket, nem lehet NULL.</p>
+        
+        <h3>-- UNIQUE --</h3>
+        <p>Biztosítja, hogy az oszlop minden értéke egyedi legyen. (A PRIMARY KEY automatikusan UNIQUE.)</p>
+        <p>Új táblán:</p>
+        <pre><code>CREATE TABLE Persons (
+        ID int NOT NULL UNIQUE,
+        LastName varchar(255) NOT NULL,
+        FirstName varchar(255),
+        Age int
+    );</code></pre>
+        <p>Több oszlopra vonatkozó UNIQUE megszorítás új táblán:</p>
+        <pre><code>CREATE TABLE Persons (
+        ID int NOT NULL,
+        LastName varchar(255) NOT NULL,
+        FirstName varchar(255),
+        Age int,
+        CONSTRAINT UC_Person UNIQUE (ID,LastName)
+    );</code></pre>
+        <p>Meglévő táblán (egyetlen oszlopra):</p>
+        <pre><code>ALTER TABLE Persons
+    ADD UNIQUE (ID);</code></pre>
+        <p>Több oszlopra vonatkozó UNIQUE megszorítás meglévő táblán:</p>
+        <pre><code>ALTER TABLE Persons
+    ADD CONSTRAINT UC_Person UNIQUE (ID,LastName);</code></pre>
+        <p>Megszorítás törlése:</p>
+        <pre><code>ALTER TABLE Persons
+    DROP CONSTRAINT UC_Person;</code></pre>
+        
+        <h3>-- Primary Key --</h3>
+        <p>Az elsődleges kulcs egyedileg azonosítja a tábla minden rekordját, UNIQUE és NOT NULL együttesen. Egy táblában csak egy PRIMARY KEY lehet.</p>
+        <p>Új táblán:</p>
+        <pre><code>CREATE TABLE Persons (
+        ID int NOT NULL PRIMARY KEY,
+        LastName varchar(255) NOT NULL,
+        FirstName varchar(255),
+        Age int
+    );</code></pre>
+        <p>Több oszlopra vonatkozó PRIMARY KEY új táblán:</p>
+        <pre><code>CREATE TABLE Persons (
+        ID int NOT NULL,
+        LastName varchar(255) NOT NULL,
+        FirstName varchar(255),
+        Age int,
+        CONSTRAINT PK_Person PRIMARY KEY (ID,LastName)
+    );</code></pre>
+        <p>Meglévő táblán:</p>
+        <pre><code>ALTER TABLE Persons
+    ADD PRIMARY KEY (ID);</code></pre>
+        <p>Több oszlopra vonatkozó PRIMARY KEY meglévő táblán:</p>
+        <pre><code>ALTER TABLE Persons
+    ADD CONSTRAINT PK_Person PRIMARY KEY (ID,LastName);</code></pre>
+        <p>Megszorítás törlése:</p>
+        <pre><code>ALTER TABLE Persons
+    DROP CONSTRAINT PK_Person;</code></pre>
+        
+        <h3>-- FOREIGN KEY --</h3>
+        <p>Kidolgozás alatt...</p>
+        </section>
+    </main>
     
-    <!-- LEKÉRDEZÉS SQL rész -->
-    <section>
-      <h2>LEKÉRDEZÉS SQL</h2>
-      
-      <h3 id="select">-- SELECT --</h3>
-      <p>Adatok kinyerésére használható</p>
-      <p>Adott táblából listázza az adott oszlopokat:</p>
-      <pre><code>SELECT oszlop1, oszlop2, ...
-FROM tábla_neve;</code></pre>
-      <p>Listázza egy adott tábla összes rekordját:</p>
-      <pre><code>SELECT * FROM tábla_neve;</code></pre>
-      <p>Előfordulhat, hogy egy oszlopban több a megegyező érték.
-A <strong>DISTINCT</strong> kulcsszó biztosítja, hogy minden érték legfeljebb csak egyszer jelenjen meg:</p>
-      <pre><code>SELECT DISTINCT Country FROM Customers;</code></pre>
-      
-      <h3>-- WHERE --</h3>
-      <p>Rekordok szűrésére használható.</p>
-      <p>Általános forma: (Nem csak SELECT-tel használható!)</p>
-      <pre><code>SELECT oszlop1, oszlop2, ...
-FROM tábla_neve;
-WHERE logikai_kifejezés;</code></pre>
-      <p>A logikai kifejezés lehetséges operátorai:</p>
-      <ul>
-        <li>'=' : Egyenlő</li>
-        <li>'>' : Nagyobb</li>
-        <li>'<' : Kisebb</li>
-        <li>'>=' : Nagyobb vagy egyenlő</li>
-        <li>'<=' : Kisebb vagy egyenlő</li>
-        <li>'<>' : Nem egyenlő</li>
-        <li>'BETWEEN' : Két érték közé szűkítés (Az intervallum határai is részei a tartománynak.)</li>
-        <li>'LIKE' : Mintázat keresése</li>
-        <li>'IN' : Több lehetséges érték kijelölése</li>
-      </ul>
-      <p><strong>BETWEEN:</strong></p>
-      <pre><code>SELECT * FROM Products
-WHERE Price BETWEEN 50 AND 60;</code></pre>
-      <p><strong>LIKE:</strong> ('s' karakterrel kezdődik, utána bármennyi és bármilyen karakter lehet.)<br>
-Nem érzékeny a kis- és nagybetűkre!</p>
-      <pre><code>SELECT * FROM Customers
-WHERE City LIKE 's%';</code></pre>
-      <p><strong>IN:</strong> (Listában, zárójelek között kell megadni az elfogadott értékeket.)</p>
-      <pre><code>SELECT * FROM Customers
-WHERE City IN ('Paris','London');</code></pre>
-      
-      <h3>-- ORDER BY --</h3>
-      <p>Rendezi az eredményt növekvő- vagy csökkenő sorrendben.</p>
-      <p>Alapvetően növekvő sorrendben rendezi az összes rekordot egyetlen oszlop alapján:</p>
-      <pre><code>SELECT * FROM Products
-ORDER BY Price;</code></pre>
-      <p>Több oszlop szerint is rendezhet:</p>
-      <pre><code>SELECT * FROM Products
-ORDER BY Price, ProductName;</code></pre>
-      <p>A sor végén megadható, hogy növekvő (ASC) vagy csökkenő (DESC) sorrendben történjen a rendezés.
-Példa, ahol először ár, majd a termék neve csökkenő sorrendben:</p>
-      <pre><code>SELECT * FROM Products
-ORDER BY Price, ProductName DESC;</code></pre>
-      <p>Fontos a rendezés sorrendje, mert a deklarációban előrébb szereplő oszlopok elsőbbséget élveznek.</p>
-      <p>Példa, különböző oszlopok különböző sorrendben:</p>
-      <pre><code>SELECT * FROM Customers
-ORDER BY Country ASC, CustomerName DESC;</code></pre>
-      
-      <h3>-- AND és OR --</h3>
-      <p>A WHERE utasításban több feltétel összekapcsolására használhatóak.</p>
-      <p>Általános forma:</p>
-      <pre><code>SELECT oszlop1, oszlop2, ...
-FROM tábla_neve
-WHERE logikai_kifejezés1 AND/OR logikai_kifejezés2 AND/OR logikai_kifejezés3, ...;</code></pre>
-      <p>Példa, ahol az ország és a név is szűrve van:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE Country = 'Spain' AND (CustomerName LIKE 'G%' OR CustomerName LIKE 'R%');</code></pre>
-      <p>A zárójelek használata kritikus, mert nélkülük más eredményt kapnánk.</p>
-      
-      <h3>-- NOT --</h3>
-      <p>A logikai feltétel tagadása, mindig a feltétel elé írva.</p>
-      <p>Példa, azok a rekordok, ahol az ország nem Spain:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE NOT Country = 'Spain';</code></pre>
-      <p>Példa, ahol a név nem 'A'-val kezdődik:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName NOT LIKE 'A%';</code></pre>
-      <p>Hasonlóan működik a BETWEEN és az IN esetén is.</p>
-      
-      <h3 id="insert-i">-- INSERT INTO --</h3>
-      <p>Új rekordok beszúrására szolgáló utasítás.</p>
-      <p>Kétféle módon:</p>
-      <p>1. Oszlopnevek megadásával:</p>
-      <pre><code>INSERT INTO tábla_neve (oszlop1, oszlop2, oszlop3, ...)
-VALUES (érték1, érték2, érték3, ...);</code></pre>
-      <p>2. Ha minden oszlophoz értéket adunk:</p>
-      <pre><code>INSERT INTO tábla_neve
-VALUES (érték1, érték2, érték3, ...);</code></pre>
-      <p>Több rekord egyszerre:</p>
-      <pre><code>INSERT INTO Customers (CustomerName, ContactName, Address, City, PostalCode, Country)
-VALUES
-('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway'),
-('Greasy Burger', 'Per Olsen', 'Gateveien 15', 'Sandnes', '4306', 'Norway'),
-('Tasty Tee', 'Finn Egan', 'Streetroad 19B', 'Liverpool', 'L1 0AA', 'UK');</code></pre>
-      
-      <h3>-- NULL --</h3>
-      <p>Egy rekord adott oszlopának értékét ellenőrzi, hogy NULL-e.</p>
-      <p>Példa, ahol a cím ismeretlen:</p>
-      <pre><code>SELECT CustomerName, ContactName, Address
-FROM Customers
-WHERE Address IS NULL;</code></pre>
-      
-      <h3 id="update">-- UPDATE --</h3>
-      <p>Létező rekordok módosítására szolgál.</p>
-      <p>Általános forma:</p>
-      <pre><code>UPDATE tábla_neve
-SET oszlop1 = érték1, oszlop2 = érték2, ...
-WHERE logikai_kifejezés;</code></pre>
-      <p>Figyelem: WHERE nélkül minden rekord módosul!</p>
-      <p>Példa, konkrét rekord módosítása az ID alapján:</p>
-      <pre><code>UPDATE Customers
-SET ContactName = 'Alfred Schmidt', City = 'Frankfurt'
-WHERE CustomerID = 1;</code></pre>
-      <p>Példa, minden mexikói rekord esetén a kapcsolattartó módosítása:</p>
-      <pre><code>UPDATE Customers
-SET ContactName='Juan'
-WHERE Country='Mexico';</code></pre>
-      
-      <h3 id="delete">-- DELETE --</h3>
-      <p>Létező rekordok törlésére szolgál.</p>
-      <p>Általános forma:</p>
-      <pre><code>DELETE FROM tábla_neve WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, az összes rekord törlése (a tábla magát nem törli):</p>
-      <pre><code>DELETE FROM tábla_neve;</code></pre>
-      <p>Példa, a tábla teljes törlése:</p>
-      <pre><code>DROP TABLE tábla_neve;</code></pre>
-      
-      <h3>-- SELECT TOP --</h3>
-      <p>Megadható, hány rekordot kérünk le a lekérdezésből.</p>
-      <pre><code>SELECT TOP darabszám/százalék oszlop(ok)
-FROM tábla_neve
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, első 3 rekord Németország esetén:</p>
-      <pre><code>SELECT TOP 3 * FROM Customers
-WHERE Country='Germany';</code></pre>
-      <p>Példa, első 50%-os rekordok:</p>
-      <pre><code>SELECT TOP 50 PERCENT * FROM Customers
-WHERE Country='Germany';</code></pre>
-      <p>Ha visszafelé szeretnénk rendezni:</p>
-      <pre><code>SELECT TOP 3 * FROM Customers
-WHERE Country = 'Germany'
-ORDER BY CustomerName DESC;</code></pre>
-      
-      <h3>-- Aggregáló (Összesítő) függvények --</h3>
-      <p>Összesítő műveleteket végeznek egy értékkészleten, egyetlen értéket adva vissza.</p>
-      <ul>
-        <li><strong>MIN()</strong> : Legkisebb érték</li>
-        <li><strong>MAX()</strong> : Legnagyobb érték</li>
-        <li><strong>COUNT()</strong> : Rekordok száma</li>
-        <li><strong>SUM()</strong> : Numerikus oszlop összege</li>
-        <li><strong>AVG()</strong> : Numerikus oszlop átlaga</li>
-      </ul>
-      <p>A COUNT kivételével a NULL értékeket figyelmen kívül hagyja.</p>
-      <p><strong>MIN és MAX:</strong></p>
-      <p>Példa, MIN használata:</p>
-      <pre><code>SELECT MIN(oszlop)
-FROM tábla_neve
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, MAX használata:</p>
-      <pre><code>SELECT MAX(oszlop)
-FROM tábla_neve
-WHERE logikai_kifejezés;</code></pre>
-      <p>Az <strong>AS</strong> kulcsszó segítségével alternatív nevet adhatunk az eredményoszlopnak:</p>
-      <pre><code>SELECT MIN(Price) AS SmallestPrice
-FROM Products;</code></pre>
-      <p>Csoportosított lekérdezés:</p>
-      <pre><code>SELECT MIN(Price) AS SmallestPrice, CategoryID
-FROM Products
-GROUP BY CategoryID;</code></pre>
-      
-      <p><strong>-- COUNT --</strong></p>
-      <p>Példa, feltételeknek megfelelő rekordok száma:</p>
-      <pre><code>SELECT COUNT(oszlop)
-FROM tábla_neve
-WHERE logikai_kifejezés;</code></pre>
-      <p>Az összes rekord száma (itt a NULL értékek is számítanak):</p>
-      <pre><code>SELECT COUNT(*)
-FROM Products;</code></pre>
-      <p>Példa, hány féle ár van (DISTINCT használatával):</p>
-      <pre><code>SELECT COUNT(DISTINCT Price)
-FROM Products;</code></pre>
-      <p>Többszavas alternatív név szögletes zárójelekkel:</p>
-      <pre><code>SELECT COUNT(*) AS [Number of records]
-FROM Products;</code></pre>
-      <p>GROUP BY használatával:</p>
-      <pre><code>SELECT COUNT(*) AS [Number of records], CategoryID
-FROM Products
-GROUP BY CategoryID;</code></pre>
-      
-      <p><strong>-- SUM --</strong></p>
-      <p>Példa, egy numerikus oszlop összege:</p>
-      <pre><code>SELECT SUM(oszlop)
-FROM tábla_neve
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, matematikai kifejezés használata (pl. minden termék ára 10 Ft esetén):</p>
-      <pre><code>SELECT SUM(Quantity * 10)
-FROM OrderDetails;</code></pre>
-      
-      <p><strong>-- AVG --</strong></p>
-      <p>Példa, oszlop átlaga:</p>
-      <pre><code>SELECT AVG(oszlop)
-FROM tábla_neve
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, átlagnál magasabb árú termékek:</p>
-      <pre><code>SELECT * FROM Products
-WHERE price > (SELECT AVG(price) FROM Products);</code></pre>
-      <p>GROUP BY esetén:</p>
-      <pre><code>SELECT AVG(Price) AS AveragePrice, CategoryID
-FROM Products
-GROUP BY CategoryID;</code></pre>
-      
-      <h3>-- LIKE --</h3>
-      <p>Mintázat keresésére használható.</p>
-      <pre><code>SELECT oszlop1, oszlop2, ...
-FROM tábla_neve
-WHERE oszlop LIKE minta;</code></pre>
-      <p>Két gyakran használt helyettesítő jel:</p>
-      <ul>
-        <li><strong>%</strong> : Megenged nulla, egy vagy akár több karaktert.</li>
-        <li><strong>_</strong> : Csak egy karaktert enged meg!</li>
-      </ul>
-      <p>Példa, ahol az 'L', 'n' és 'd' karakterek kötöttek:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE city LIKE 'L_nd__';</code></pre>
-      <p>Példa, ahol a név 'A'-val kezdődik:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE 'A%';</code></pre>
-      <p>Példa, ahol a név 'A'-val végződik:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE '%A';</code></pre>
-      <p>Példa, ahol a név 'A'-val kezdődik és 'B'-vel végződik:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE 'A%B';</code></pre>
-      <p>Példa, ahol a név tartalmaz 'A'-t:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE '%A%';</code></pre>
-      <p>Példa, ahol kombinálva vannak a helyettesítő jelek (legalább 3 karakter hosszú):</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE 'a__%';</code></pre>
-      
-      <h3>-- Helyettesítő jelek --</h3>
-      <p>A helyettesítő jelek segítségével egyszerűbbé válik a mintázatok keresése a LIKE operátorral.</p>
-      <ul>
-        <li><strong>%</strong> : Megenged nulla vagy több karaktert.</li>
-        <li><strong>_</strong> : Csak egy karakter.</li>
-        <li><strong>[]</strong> : Egyetlen karakter, ami a zárójelek között szerepel.</li>
-        <li><strong>^</strong> : Olyan karakter, ami NEM szerepel a zárójelek között.</li>
-        <li><strong>-</strong> : Egy megadott tartományból választ egy karaktert.</li>
-      </ul>
-      <p>Példa, biztosan 'b', 's' vagy 'p' az első karakter:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE '[bsp]%';</code></pre>
-      <p>Példa, ahol az első karakter 'a' és 'f' között van:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerName LIKE '[a-f]%';</code></pre>
-      
-      <h3>-- IN --</h3>
-      <p>Lehetővé teszi több értékre történő szűrést.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla_neve
-WHERE oszlop IN (érték1, érték2, ...);</code></pre>
-      <p>Allekérdezéssel:</p>
-      <pre><code>SELECT * FROM Customers
-WHERE CustomerID IN (SELECT CustomerID FROM Orders);</code></pre>
-      
-      <h3>-- BETWEEN --</h3>
-      <p>Két érték közötti szűkítés (az intervallum határai részei a tartománynak), NOT kulcsszóval ellentétesen is.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla_neve
-WHERE oszlop BETWEEN érték1 AND érték2;</code></pre>
-      <p>Példa, árak 10 és 20 Ft között, és kategóriák 1, 2 vagy 3:</p>
-      <pre><code>SELECT * FROM Products
-WHERE Price BETWEEN 10 AND 20
-AND CategoryID IN (1,2,3);</code></pre>
-      <p>Példa, szöveg esetén (ABC sorrend szerint):</p>
-      <pre><code>SELECT * FROM Products
-WHERE ProductName NOT BETWEEN 'Carnarvon Tigers' AND 'Mozzarella di Giovanni'
-ORDER BY ProductName;</code></pre>
-      <p>Dátumokra kétféle írásmód:</p>
-      <pre><code>SELECT * FROM Orders
-WHERE OrderDate BETWEEN #07/01/1996# AND #07/31/1996#;
-
-SELECT * FROM Orders
-WHERE OrderDate BETWEEN '1996-07-01' AND '1996-07-31';</code></pre>
-      
-      <h3>-- ALIAS --</h3>
-      <p>Táblák vagy oszlopok ideiglenes elnevezése.</p>
-      <pre><code>SELECT oszlop AS alias_név
-FROM tábla_neve;
-
-SELECT oszlop(ok)
-FROM tábla_neve AS alias_név;</code></pre>
-      <p>Példák:</p>
-      <pre><code>SELECT CustomerID AS ID
-FROM Customers;
-
-SELECT CustomerID ID
-FROM Customers;
-
-SELECT CustomerID AS ID, CustomerName AS Customer
-FROM Customers;
-
-SELECT ProductName AS "My Great Products"
-FROM Products;
-
-SELECT ProductName AS [My Great Products]
-FROM Products;
-
-SELECT CustomerName, Address + ', ' + PostalCode + ' ' + City + ', ' + Country AS Address
-FROM Customers;
-
-SELECT * FROM Customers AS Persons;</code></pre>
-      <p>Egy példa táblák alias használatára:</p>
-      <pre><code>SELECT o.OrderID, o.OrderDate, c.CustomerName
-FROM Customers AS c, Orders AS o
-WHERE c.CustomerName='KFC' AND c.CustomerID=o.CustomerID;</code></pre>
-      
-      <h3>-- JOIN --</h3>
-      <p>Két vagy több tábla rekordjainak összekapcsolása közös oszlop alapján.</p>
-      <ul>
-        <li>(INNER) JOIN: Csak azokat a rekordokat adja vissza, ahol mindkét táblában egyezés van.</li>
-        <li>LEFT (OUTER) JOIN: A bal oldali tábla összes rekordját és a jobb oldali egyező rekordokat adja vissza.</li>
-        <li>RIGHT (OUTER) JOIN: A jobb oldali tábla összes rekordját és a bal oldali egyező rekordokat adja vissza.</li>
-        <li>FULL (OUTER) JOIN: Mindkét tábla összes rekordját adja vissza, ahol van egyezés vagy nincs.</li>
-      </ul>
-      <p><strong>-- INNER JOIN --</strong></p>
-      <p>Általános használat:</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla1
-INNER JOIN tábla2
-ON tábla1.oszlop = tábla2.oszlop;</code></pre>
-      <p>Példa, ha egy terméknek nincs CategoryID-je vagy nincs megfelelő rekord a Categories táblában, azt nem adja vissza:</p>
-      <pre><code>SELECT ProductID, ProductName, CategoryName
-FROM Products
-INNER JOIN Categories ON Products.CategoryID = Categories.CategoryID;</code></pre>
-      <p>Javasolt az oszlopok előtaggal történő megadása ütközések elkerülése érdekében:</p>
-      <pre><code>SELECT Products.ProductID, Products.ProductName, Categories.CategoryName
-FROM Products
-INNER JOIN Categories ON Products.CategoryID = Categories.CategoryID;</code></pre>
-      <p>Három tábla összekapcsolása:</p>
-      <pre><code>SELECT Orders.OrderID, Customers.CustomerName, Shippers.ShipperName
-FROM ((Orders
-INNER JOIN Customers ON Orders.CustomerID = Customers.CustomerID)
-INNER JOIN Shippers ON Orders.ShipperID = Shippers.ShipperID);</code></pre>
-      
-      <p><strong>-- LEFT JOIN --</strong></p>
-      <p>Visszaadja a bal oldali tábla összes rekordját, valamint a jobb oldali egyező rekordokat.</p>
-      <pre><code>SELECT column_name(s)
-FROM tábla1
-LEFT JOIN tábla2
-ON tábla1.oszlop = tábla2.oszlop;</code></pre>
-      <p>Példa, vásárlók rendelései:</p>
-      <pre><code>SELECT Customers.CustomerName, Orders.OrderID
-FROM Customers
-LEFT JOIN Orders ON Customers.CustomerID = Orders.CustomerID
-ORDER BY Customers.CustomerName;</code></pre>
-      
-      <p><strong>-- RIGHT JOIN --</strong></p>
-      <p>Visszaadja a jobb oldali tábla összes rekordját, valamint a bal oldali egyező rekordokat.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla1
-LEFT JOIN tábla2
-ON tábla1.oszlop = tábla2.oszlop;</code></pre>
-      <p>Példa, rendeléseket készítő alkalmazottak:</p>
-      <pre><code>SELECT Orders.OrderID, Employees.FirstName + ' ' + Employees.LastName AS Employee
-FROM Orders
-RIGHT JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID
-ORDER BY Orders.OrderID;</code></pre>
-      
-      <p><strong>-- FULL JOIN --</strong></p>
-      <p>Mindkét tábla rekordjait visszaadja, ahol hiányzó értékeket NULL-pel pótol.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla1
-FULL JOIN tábla2
-ON tábla1.oszlop = tábla2.oszlop;
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, minden vásárló és rendelés listázása:</p>
-      <pre><code>SELECT Customers.CustomerName, Orders.OrderID
-FROM Customers
-FULL OUTER JOIN Orders ON Customers.CustomerID = Orders.CustomerID
-ORDER BY Customers.CustomerName;</code></pre>
-      
-      <p><strong>-- SELF JOIN --</strong></p>
-      <p>A tábla önmagával történő összekapcsolása.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla1 T1, tábla2 T2
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, azonos városban lévő vásárlók összekapcsolása:</p>
-      <pre><code>SELECT A.CustomerName AS CustomerName1, B.CustomerName AS CustomerName2, A.City
-FROM Customers A, Customers B
-WHERE A.CustomerID <> B.CustomerID
-  AND A.City = B.City
-ORDER BY A.City;</code></pre>
-      
-      <p><strong>-- UNION --</strong></p>
-      <p>Két vagy több SELECT utasítás eredménykészletét kombinálja.</p>
-      <ul>
-        <li>Minden SELECT-nek ugyanannyi oszlopa kell legyen.</li>
-        <li>Az oszlopok típusának hasonlónak kell lenniük.</li>
-        <li>A sorrendnek meg kell egyeznie.</li>
-      </ul>
-      <p>Általános használat:</p>
-      <pre><code>SELECT oszlop(ok) FROM tábla1
-UNION
-SELECT oszlop(ok) FROM tábla2;</code></pre>
-      <p>Duplikáció engedélyezéséhez az <strong>ALL</strong> kulcsszóval:</p>
-      <pre><code>SELECT oszlop(ok) FROM tábla1
-UNION ALL
-SELECT oszlop(ok) FROM tábla2;</code></pre>
-      <p>Példa, német városok vásárlók és beszállítók esetén:</p>
-      <pre><code>SELECT City, Country FROM Customers
-WHERE Country='Germany'
-UNION
-SELECT City, Country FROM Suppliers
-WHERE Country='Germany'
-ORDER BY City;</code></pre>
-      <p>Példa, típus, kapcsolattartó, város, ország:</p>
-      <pre><code>SELECT 'Customer' AS Type, ContactName, City, Country
-FROM Customers
-UNION
-SELECT 'Supplier', ContactName, City, Country
-FROM Suppliers;</code></pre>
-      
-      <h3>-- GROUP BY --</h3>
-      <p>Csoportosítja az azonos értékű sorokat, például országonkénti ügyfélszám meghatározása.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla_neve
-WHERE logikai_kifejezés
-GROUP BY oszlop(ok)
-ORDER BY oszlop(ok);</code></pre>
-      <p>Példa, vásárlók száma országonként:</p>
-      <pre><code>SELECT COUNT(CustomerID), Country
-FROM Customers
-GROUP BY Country;</code></pre>
-      <p>Példa, vásárlók száma csökkenő sorrendben:</p>
-      <pre><code>SELECT COUNT(CustomerID), Country
-FROM Customers
-GROUP BY Country
-ORDER BY COUNT(CustomerID) DESC;</code></pre>
-      <p>Példa, melyik futár hány rendelést szállít:</p>
-      <pre><code>SELECT Shippers.ShipperName, COUNT(Orders.OrderID) AS NumberOfOrders 
-FROM Orders
-LEFT JOIN Shippers ON Orders.ShipperID = Shippers.ShipperID
-GROUP BY ShipperName;</code></pre>
-      
-      <h3>-- HAVING --</h3>
-      <p>Az összesítő függvények szűrésére szolgál, hasonlóan a WHERE-hez.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla_neve
-WHERE logikai_kifejezés
-GROUP BY oszlop(ok)
-HAVING logikai_kifejezés
-ORDER BY oszlop(ok);</code></pre>
-      <p>Példa, azok az alkalmazottak, akiknek a vezetékneve "Davolio" vagy "Fuller" és több mint 25 rendelést teljesítettek:</p>
-      <pre><code>SELECT Employees.LastName, COUNT(Orders.OrderID) AS NumberOfOrders
-FROM Orders
-INNER JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID
-WHERE LastName = 'Davolio' OR LastName = 'Fuller'
-GROUP BY LastName
-HAVING COUNT(Orders.OrderID) > 25;</code></pre>
-      
-      <h3>-- EXISTS --</h3>
-      <p>Az allekérdezésben lévő rekord(ok) létezését vizsgálja. TRUE értéket ad, ha legalább egy rekord található.</p>
-      <p>Példa, beszállítók, ahol az ár 20 Ft alatt van:</p>
-      <pre><code>SELECT SupplierName
-FROM Suppliers
-WHERE EXISTS (SELECT ProductName
-              FROM Products
-              WHERE Products.SupplierID = Suppliers.supplierID AND Price < 20);</code></pre>
-      
-      <h3>-- ANY és ALL --</h3>
-      <p>Az összehasonlításhoz egy oszlopérték és egy értékkészlet között.</p>
-      <p><strong>ANY:</strong> TRUE, ha az allekérdezés bármely értéke megfelel a feltételnek.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla_neve
-WHERE oszlop (összehasonlító operátor) ANY (SELECT oszlop
-                                             FROM tábla_neve
-                                             WHERE logikai_kifejezés);</code></pre>
-      <p><strong>ALL:</strong> TRUE, ha az allekérdezés minden értéke megfelel a feltételnek.</p>
-      <pre><code>SELECT oszlop(ok)
-FROM tábla_neve
-WHERE oszlop (összehasonlító operátor) ALL (SELECT oszlop
-                                             FROM tábla_neve
-                                             WHERE logikai_kifejezés);</code></pre>
-      <p>Példa, azon termékek nevei, melyekből még pontosan 10 db van:</p>
-      <pre><code>SELECT ProductName
-FROM Products
-WHERE ProductID = ANY (SELECT ProductID
-                       FROM OrderDetails
-                       WHERE Quantity = 10);</code></pre>
-      <p>Példa, minden termék neve:</p>
-      <pre><code>SELECT ALL ProductName
-FROM Products
-WHERE TRUE;</code></pre>
-      <p>Példa, ha az OrderDetails táblában minden termékből pontosan 10 van:</p>
-      <pre><code>SELECT ProductName
-FROM Products
-WHERE ProductID = ALL (SELECT ProductID
-                       FROM OrderDetails
-                       WHERE Quantity = 10);</code></pre>
-      
-      <h3>-- SELECT INTO --</h3>
-      <p>Adatok másolása egy táblából egy új táblába.</p>
-      <pre><code>SELECT oszlop1, oszlop2, oszlop3, ...
-INTO újtábla [IN külső_adatbázis]
-FROM régitábla
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa, teljes tábla másolása:</p>
-      <pre><code>SELECT *
-INTO újtábla [IN külső_adatbázis]
-FROM régitábla
-WHERE logikai_kifejezés;</code></pre>
-      <p>Backup tábla készítése:</p>
-      <pre><code>SELECT * INTO CustomersBackup2025
-FROM Customers;</code></pre>
-      <p>Másik adatbázisba:</p>
-      <pre><code>SELECT * INTO CustomersBackup2025 IN 'Backup.mdb'
-FROM Customers;</code></pre>
-      <p>Példa, másik tábla létrehozása:</p>
-      <pre><code>SELECT * INTO CustomersGermany
-FROM Customers
-WHERE Country = 'Germany';</code></pre>
-      <p>Példa, több táblából egy táblába:</p>
-      <pre><code>SELECT Customers.CustomerName, Orders.OrderID
-INTO CustomersOrderBackup2025
-FROM Customers
-LEFT JOIN Orders ON Customers.CustomerID = Orders.CustomerID;</code></pre>
-      <p>Példa, új, üres tábla létrehozása egy meglévő séma alapján:</p>
-      <pre><code>SELECT * INTO newtable
-FROM oldtable
-WHERE 1 = 0;</code></pre>
-      
-      <h3>-- INSERT INTO (adatmásolás) --</h3>
-      <p>Adatok másolása egy táblából egy másikba. A forrás- és céltábla adattípusainak egyeznie kell.</p>
-      <pre><code>INSERT INTO céltábla
-SELECT * FROM forrástábla
-WHERE logikai_kifejezés;
-
-INSERT INTO céltábla (oszlop1, oszlop2, oszlop3, ...)
-SELECT oszlop1, oszlop2, oszlop3, ...
-FROM forrástábla
-WHERE logikai_kifejezés;</code></pre>
-      <p>Példa:</p>
-      <pre><code>INSERT INTO Customers (CustomerName, City, Country)
-SELECT SupplierName, City, Country
-FROM Suppliers;</code></pre>
-      
-      <h3>-- CASE --</h3>
-      <p>Feltételes visszatérési érték, hasonló az if szerkezethez. Ha nincs ELSE, és egyik feltétel sem igaz, akkor NULL.</p>
-      <pre><code>CASE
-    WHEN logikai_kifejezés1 THEN eredmény1
-    WHEN logikai_kifejezés2 THEN eredmény2
-    WHEN logikai_kifejezésN THEN eredményN
-    ELSE result
-END;</code></pre>
-      <p>Példa:</p>
-      <pre><code>SELECT OrderID, Quantity,
-CASE
-    WHEN Quantity > 30 THEN 'The quantity is greater than 30'
-    WHEN Quantity = 30 THEN 'The quantity is 30'
-    ELSE 'The quantity is under 30'
-END AS QuantityText
-FROM OrderDetails;</code></pre>
-      <p>Példa 2:</p>
-      <pre><code>SELECT CustomerName, City, Country
-FROM Customers
-ORDER BY (CASE
-             WHEN City IS NULL THEN Country
-             ELSE City
-         END);</code></pre>
-      
-      <h3>-- NULL függvények --</h3>
-      <p>Hasznosak, ha egy NULL értékkel kell műveletet végezni, de nem akarunk NULL eredményt.</p>
-      <p><strong>ISNULL()</strong>: Alternatív értéket ad vissza, ha a kifejezés NULL.</p>
-      <p>Példa (az UnitsOnOrder tartalmazhat NULL értéket):</p>
-      <pre><code>SELECT ProductName, UnitPrice * (UnitsInStock + ISNULL(UnitsOnOrder, 0))
-FROM Products;</code></pre>
-      <p><strong>COALESCE()</strong>: Hasonlóan működik:</p>
-      <pre><code>SELECT ProductName, UnitPrice * (UnitsInStock + COALESCE(UnitsOnOrder, 0))
-FROM Products;</code></pre>
-      
-      <h3>-- Tárolt eljárás --</h3>
-      <p>Elmenthető SQL-kód, amelyet újra felhasználhatunk, akár paraméterekkel.</p>
-      <pre><code>CREATE PROCEDURE procedúra_neve
-AS
-sql_utasítás
-GO;</code></pre>
-      <p>Futtatás:</p>
-      <pre><code>EXEC procedúra_neve;</code></pre>
-      <p>Példa, minden vásárlót kiválasztó eljárás:</p>
-      <pre><code>CREATE PROCEDURE SelectAllCustomers
-AS
-SELECT * FROM Customers
-GO;
-
-EXEC SelectAllCustomers;</code></pre>
-      <p>Példa, eljárás egy adott város ügyfeleinek kiválasztására:</p>
-      <pre><code>CREATE PROCEDURE SelectAllCustomers @City nvarchar(30)
-AS
-SELECT * FROM Customers WHERE City = @City
-GO;
-
-EXEC SelectAllCustomers @City = 'London';</code></pre>
-      <p>Példa, több paraméteres tárolt eljárás:</p>
-      <pre><code>CREATE PROCEDURE SelectAllCustomers @City nvarchar(30), @PostalCode nvarchar(10)
-AS
-SELECT * FROM Customers WHERE City = @City AND PostalCode = @PostalCode
-GO;
-
-EXEC SelectAllCustomers @City = 'London', @PostalCode = 'WA1 1DP';</code></pre>
-      
-      <h3>-- Megjegyzések --</h3>
-      <p>Megjegyzések segítik a kód olvashatóságát.</p>
-      <p>Egysoros megjegyzés:</p>
-      <pre><code>-- Ez egy egysoros megjegyzés</code></pre>
-      <p>Többsoros megjegyzés:</p>
-      <pre><code>/* Ez pedig
-   több soros
-   megjegyzés */</code></pre>
-      
-      <h3>-- Operátorok --</h3>
-      <p><strong>Aritmetikai operátorok:</strong></p>
-      <ul>
-        <li>'+' : Összeadás</li>
-        <li>'-' : Kivonás</li>
-        <li>'*' : Szorzás</li>
-        <li>'/' : Osztás</li>
-        <li>'%' : Maradékos osztás</li>
-      </ul>
-      <p><strong>Bitwise operátorok:</strong></p>
-      <ul>
-        <li>'&amp;' : Bitwise AND</li>
-        <li>'|': Bitwise OR</li>
-        <li>'^' : Bitwise exclusive OR</li>
-      </ul>
-      <p><strong>Összehasonlító operátorok:</strong></p>
-      <ul>
-        <li>'=' : Egyenlő</li>
-        <li>'>' : Nagyobb</li>
-        <li>'<' : Kisebb</li>
-        <li>'&gt;=' : Nagyobb egyenlő</li>
-        <li>'&lt;=' : Kisebb egyenlő</li>
-        <li>'&lt;&gt;' : Nem egyenlő</li>
-      </ul>
-      <p><strong>Összetett operátorok:</strong> (MS SQL SERVER környezetben nem használhatók)</p>
-      <ul>
-        <li>'+=' : Plusz egyenlő</li>
-        <li>'-=' : Mínusz egyenlő</li>
-        <li>'*=' : Szor egyenlő</li>
-        <li>'/=' : Osztva egyenlő</li>
-        <li>'%=' : Maradék egyenlő</li>
-        <li>'&amp;=' : Bitwise AND egyenlő</li>
-        <li>'^-=' : Bitwise exclusive egyenlő</li>
-        <li>'|*=' : Bitwise OR egyenlő</li>
-      </ul>
-    </section>
-    
-    <!-- ADATBÁZIS SQL rész -->
-    <section>
-      <h2>ADATBÁZIS SQL</h2>
-      
-      <h3 id="create-d">-- CREATE DATABASE --</h3>
-      <p>Új adatbázis létrehozása.</p>
-      <p>Általános használat:</p>
-      <pre><code>CREATE DATABASE adatbázis_neve;</code></pre>
-      <p>Ellenőrzés (összes adatbázis listázása): SHOW DATABASES</p>
-      
-      <h3 id="drop-d">-- DROP DATABASE --</h3>
-      <p>Meglévő adatbázis törlése.</p>
-      <pre><code>DROP DATABASE adatbázis_neve;</code></pre>
-      <p>Ellenőrzés (összes adatbázis listázása): SHOW DATABASES</p>
-      
-      <h3>-- BACKUP DATABASE --</h3>
-      <p>Teljes backup készítése egy adatbázisról.</p>
-      <pre><code>BACKUP DATABASE adatbázis_neve
-TO DISK = 'fájl_útvonala';</code></pre>
-      <p>A differenciális backup csak a változott részeket készíti:</p>
-      <pre><code>BACKUP DATABASE adatbázis_neve
-TO DISK = 'fájl_útvonala'
-WITH DIFFERENTIAL;</code></pre>
-      
-      <h3 id="create-t">-- CREATE TABLE --</h3>
-      <p>Új tábla létrehozása.</p>
-      <pre><code>CREATE TABLE tábla_neve (
-    oszlop1 adattípus,
-    oszlop2 adattípus,
-    oszlop3 adattípus,
-    ...
-);</code></pre>
-      <p>Másik tábla alapján:</p>
-      <pre><code>CREATE TABLE új_tábla AS
-SELECT oszlop1, oszlop2, ...
-FROM létező_tábla
-WHERE ...;</code></pre>
-      
-      <h3 id="drop-t">-- DROP TABLE --</h3>
-      <p>Tábla törlése az adatbázisból.</p>
-      <pre><code>DROP TABLE tábla_neve;</code></pre>
-      <p>Vagy az összes adat törlése a séma megtartásával:</p>
-      <pre><code>TRUNCATE TABLE tábla_neve;</code></pre>
-      
-      <h3 id="alter-t">-- ALTER TABLE --</h3>
-      <p>Tábla oszlopainak módosítása, megszorítások kezelése.</p>
-      <p>Oszlop hozzáadása:</p>
-      <pre><code>ALTER TABLE tábla_neve
-ADD oszlop adattípus;</code></pre>
-      <p>Oszlop törlése:</p>
-      <pre><code>ALTER TABLE tábla_neve
-DROP COLUMN oszlop;</code></pre>
-      <p>Oszlop átnevezése:</p>
-      <pre><code>ALTER TABLE tábla_neve
-RENAME COLUMN réginév TO újnév;</code></pre>
-      <p>SQL Server-ben:</p>
-      <pre><code>EXEC sp_rename 'tábla.réginév', 'újnév', 'COLUMN';</code></pre>
-      <p>Adattípus módosítása:</p>
-      <pre><code>ALTER TABLE tábla_neve
-ALTER COLUMN oszlop adattípus;</code></pre>
-      
-      <h3>-- Megszorítások --</h3>
-      <p>Új táblán:</p>
-      <pre><code>CREATE TABLE tábla_neve (
-    oszlop1 adattípus megszorítás,
-    oszlop2 adattípus megszorítás,
-    oszlop3 adattípus megszorítás,
-    ...
-);</code></pre>
-      <p>Meglévő táblán:</p>
-      <pre><code>ALTER TABLE tábla_neve (
-    oszlop1 adattípus megszorítás,
-    oszlop2 adattípus megszorítás,
-    oszlop3 adattípus megszorítás,
-    ...
-);</code></pre>
-      <p>Leggyakoribb megszorítások:</p>
-      <ul>
-        <li><strong>NOT NULL</strong> : Biztosítja, hogy az oszlop ne legyen NULL.</li>
-        <li><strong>UNIQUE</strong> : Az oszlop értékei egyediek legyenek.</li>
-        <li><strong>PRIMARY KEY</strong> : Az oszlop (vagy oszlopok) egyedisége + NOT NULL.</li>
-        <li><strong>FOREIGN KEY</strong> : Megakadályozza a kapcsolatok megsértését.</li>
-        <li><strong>CHECK</strong> : Biztosítja, hogy az érték megfeleljen egy feltételnek.</li>
-        <li><strong>DEFAULT</strong> : Alapértelmezett érték, ha nincs megadva.</li>
-        <li><strong>CREATE INDEX</strong> : Gyorsabb lekérdezéshez.</li>
-      </ul>
-      
-      <h3>-- NOT NULL --</h3>
-      <p>A megszorítás kikényszeríti, hogy az oszlop mindig tartalmazzon értéket, nem lehet NULL.</p>
-      
-      <h3>-- UNIQUE --</h3>
-      <p>Biztosítja, hogy az oszlop minden értéke egyedi legyen. (A PRIMARY KEY automatikusan UNIQUE.)</p>
-      <p>Új táblán:</p>
-      <pre><code>CREATE TABLE Persons (
-    ID int NOT NULL UNIQUE,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int
-);</code></pre>
-      <p>Több oszlopra vonatkozó UNIQUE megszorítás új táblán:</p>
-      <pre><code>CREATE TABLE Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int,
-    CONSTRAINT UC_Person UNIQUE (ID,LastName)
-);</code></pre>
-      <p>Meglévő táblán (egyetlen oszlopra):</p>
-      <pre><code>ALTER TABLE Persons
-ADD UNIQUE (ID);</code></pre>
-      <p>Több oszlopra vonatkozó UNIQUE megszorítás meglévő táblán:</p>
-      <pre><code>ALTER TABLE Persons
-ADD CONSTRAINT UC_Person UNIQUE (ID,LastName);</code></pre>
-      <p>Megszorítás törlése:</p>
-      <pre><code>ALTER TABLE Persons
-DROP CONSTRAINT UC_Person;</code></pre>
-      
-      <h3>-- Primary Key --</h3>
-      <p>Az elsődleges kulcs egyedileg azonosítja a tábla minden rekordját, UNIQUE és NOT NULL együttesen. Egy táblában csak egy PRIMARY KEY lehet.</p>
-      <p>Új táblán:</p>
-      <pre><code>CREATE TABLE Persons (
-    ID int NOT NULL PRIMARY KEY,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int
-);</code></pre>
-      <p>Több oszlopra vonatkozó PRIMARY KEY új táblán:</p>
-      <pre><code>CREATE TABLE Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int,
-    CONSTRAINT PK_Person PRIMARY KEY (ID,LastName)
-);</code></pre>
-      <p>Meglévő táblán:</p>
-      <pre><code>ALTER TABLE Persons
-ADD PRIMARY KEY (ID);</code></pre>
-      <p>Több oszlopra vonatkozó PRIMARY KEY meglévő táblán:</p>
-      <pre><code>ALTER TABLE Persons
-ADD CONSTRAINT PK_Person PRIMARY KEY (ID,LastName);</code></pre>
-      <p>Megszorítás törlése:</p>
-      <pre><code>ALTER TABLE Persons
-DROP CONSTRAINT PK_Person;</code></pre>
-      
-      <h3>-- FOREIGN KEY --</h3>
-      <p>Kidolgozás alatt...</p>
-    </section>
-  </main>
-  
-  <footer>
-    <p><a href="#start">A NAGY SQL JEGYZET - v2025.03.17</a></p>
-  </footer>
+    <footer>
+        <p><a href="#start">A NAGY SQL JEGYZET - v2025.03.17</a></p>
+    </footer>
+  </div>
 </body>
 </html>
